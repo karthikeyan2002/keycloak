@@ -8,17 +8,26 @@ import { KeycloakAuthGuard,KeycloakService } from "keycloak-angular";
 
 export class AuthGuard extends KeycloakAuthGuard{
     constructor(
-        protected readonly router: Router,
+        protected readonly route: Router,
         protected readonly keycloak: KeycloakService
     ){
-        super(router,keycloak);
+        super(route,keycloak);
     }   
 
-    isAccessAllowed(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Promise<boolean> {
-        // Implement your access control logic here
-        return Promise.resolve(true);
+    public async isAccessAllowed(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): Promise<boolean> {
+        if(!this.authenticated){
+            await this.keycloak.login({
+                redirectUri: window.location.origin + state.url;
+            });
+        }
+        const requiredRoles = route.data['roles'];
+        if(!Array.isArray(requiredRoles) || requiredRoles.length === 0){
+            return true;
+        }
+        return requiredRoles.every((role)=>this.roles.includes(role))
     }
-}
+
     
 
 }
+    
